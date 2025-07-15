@@ -6,5 +6,7 @@ import org.springframework.context.annotation.Profile;
 
 public interface ProfileService {
 
-    public ProfileResponse createProfile(ProfileRequest profileRequest);
+    ProfileResponse createProfile(ProfileRequest profileRequest);
+    ProfileResponse getProfile(String email);
+    void sendResetOtp(String email);
 }
