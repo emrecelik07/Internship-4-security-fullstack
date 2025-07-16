@@ -2,9 +2,11 @@ package com.emrecelik.demo8.controller;
 
 import com.emrecelik.demo8.io.AuthRequest;
 import com.emrecelik.demo8.io.AuthResponse;
+import com.emrecelik.demo8.io.ResetPasswordRequest;
 import com.emrecelik.demo8.service.ProfileService;
 import com.emrecelik.demo8.service.impl.AppUserDetailsService;
 import com.emrecelik.demo8.util.JwtUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,7 +18,6 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -51,21 +52,21 @@ public class AuthController {
                     .build();
 
             return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, responseCookie.toString())
-                    .body(new AuthResponse(authRequest.getEmail() ,jwttoken));
+                    .body(new AuthResponse(authRequest.getEmail(), jwttoken));
 
-        }catch (BadCredentialsException e) {
+        } catch (BadCredentialsException e) {
             Map<String, Object> errors = new HashMap<>();
             errors.put("error", true);
             errors.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
 
-        }catch (DisabledException e) {
+        } catch (DisabledException e) {
             Map<String, Object> errors = new HashMap<>();
             errors.put("error", true);
             errors.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errors);
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             Map<String, Object> errors = new HashMap<>();
             errors.put("error", true);
             errors.put("message", "Authentication failed");
@@ -91,9 +92,51 @@ public class AuthController {
 
         try {
             profileService.sendResetOtp(email);
-        }catch (Exception e) {
+        } catch (Exception e) {
 
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
+    }
+
+    @PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+
+        try {
+
+            profileService.resetPassword(
+                    resetPasswordRequest.getEmail(),
+                    resetPasswordRequest.getOtp(),
+                    resetPasswordRequest.getNewPassword());
+
+        } catch (Exception e) {
+
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    @PostMapping(path = "/send-otp")
+    public void sendVerifyOtp(@CurrentSecurityContext(expression = "authentication.name") String email) {
+        try {
+            profileService.sendOtp(email);
+        }catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public void verifyOtp(@RequestBody Map<String, Object> request,
+                          @CurrentSecurityContext(expression = "authentication?.name") String email) {
+
+        if (request.get("otp") == null) {
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP required");
+        }
+
+        try {
+            profileService.verifyOtp(email, request.get("otp").toString());
+        }catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
     }
 }
