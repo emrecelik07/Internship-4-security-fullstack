@@ -6,6 +6,7 @@ import com.emrecelik.demo8.io.ResetPasswordRequest;
 import com.emrecelik.demo8.service.ProfileService;
 import com.emrecelik.demo8.service.impl.AppUserDetailsService;
 import com.emrecelik.demo8.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -137,6 +138,22 @@ public class AuthController {
         }catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
+
+    }
+
+    @PostMapping(path = "/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+         ResponseCookie cookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body("Logged out successfully!");
 
     }
 }
